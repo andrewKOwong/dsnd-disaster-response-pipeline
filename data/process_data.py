@@ -62,6 +62,16 @@ def clean_data(df):
     df = df.drop(labels=['categories'], axis=1)
     df = pd.concat([df, categories], axis=1)
 
+    # A small number of samples have the "related" category as
+    # 2 (instead of 0 or 1).
+    # These rows all are encoded as 0 for every other category.
+    # This is probably some sort of bad data, so drop it.
+    initial_dim = df.shape
+    df = df[~(df['related'] == 2)]
+    dropped_dim = df.shape
+    logging.info(
+        f"Dropped {initial_dim[0] - dropped_dim[0]} samples where 'related' == 2.")
+
     # Return the cleaned dataframe
     logging.info(f'Cleaned dataframe created with dims: {df.shape}')
     return df
