@@ -17,6 +17,7 @@ from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.metrics import classification_report, f1_score, make_scorer
 import pickle
 from functools import partial
+from time import time
 
 
 def nltk_download():
@@ -40,17 +41,24 @@ def load_data(database_filepath, table_name='messages'):
 
 
 def tokenize(text, remove_stop_words=False):
+    """
+    Custom tokenizer for messages.
+
+    TODO: remove_stop_words - Boolean to control whether 
+    """
     # case normalization (i.e. all lower case)
     text = text.lower()
     # punctuation removal
     text = re.sub(r'[^a-zA-Z0-9]', ' ', text)
     # tokenize the text
     tokens = word_tokenize(text)
+    # TODO
     # option stop words removal
     # if remove_stop_words:
     #     tokens = [
     #         token for token in tokens if token not in stopwords.words('english')
     #     ]
+
     # wordnet lemmatize
     lemmatizer = WordNetLemmatizer()
     text = [lemmatizer.lemmatize(token) for token in tokens]
@@ -59,23 +67,41 @@ def tokenize(text, remove_stop_words=False):
 
 
 def build_model(tokenizer=tokenize):
+    """
+    Builds a pipeline with grid search and cross validation
+    for classifying messages.
+
+    Adjust steps of the model by changing this function.
+
+    Parameters:
+        tokenizer -- Custom tokenizer function for messages.
+
+    Returns:
+        model ------ Scikit learn estimator.
+    """
+
+    # Pipeline with term frequence-inverse document frequency
+    # vectorizer and a multioutput classifier wrapped classifier.
     pipeline = Pipeline([
         ('vect_tfidf', TfidfVectorizer(tokenizer=tokenize)),
         ('clf', MultiOutputClassifier(RandomForestClassifier()))
     ], verbose=True)
 
-    parameters = {'clf__estimator__n_estimators': [10]}
+    # Params for grid search.
+    parameters = {'clf__estimator__n_estimators': [1]}
 
-    # Wrap the f1_score function with several params.
+    # Wrap the f1_score function with several params, mostly to
+    # suppress zero division warnings.
     # https://scikit-learn.org/stable/modules/model_evaluation.html#defining-your-scoring-strategy-from-metric-functions
     # Weighted average gets metrics weighted by support.
     # Zero division = 0 sets metric to 0 when there is no support.
-    # f1_weighted = partial(f1_score, average='weighted', zero_division=0)
-    # def scorer(y_true, y_pred):
-    #     return f1_score(y_true, y_pred, average='weighted', zero_division=0)
-
     scorer = make_scorer(f1_score, average='weighted', zero_division=0)
 
+    # Grid search.
+    # Use cross validation = 5 for actual model training, 2 for testing.
+    # n_jobs > 1 for take advantage of multi-core.
+    # However, avoid n_jobs = -1, as using all processors may freeze
+    # your workstation if working locally.
     model = GridSearchCV(pipeline, param_grid=parameters,
                          n_jobs=2, scoring=scorer, refit=True, cv=2, verbose=3)
 
@@ -83,6 +109,16 @@ def build_model(tokenizer=tokenize):
 
 
 def evaluate_model(model, X_test, Y_test):
+    """
+    Predict with a model.
+
+    Params:
+        model  - A trained sklearn model.
+        X_test - Input data.
+        Y_test - True results.
+    Returns:
+        scores - Pandas df with precision, recall, and f1 score for each output category.
+    """
     # Predict with the model
     Y_preds = model.predict(X_test)
     # Evaluate precision, recall, and f1 score
@@ -93,12 +129,31 @@ def evaluate_model(model, X_test, Y_test):
 
 
 def save_model(model, model_filepath):
+    """
+    Pickles and saves a classifier model.
+
+    Params:
+        model ----------- A sklearn model.
+        model_filepath -- Filepath for the pickle file.
+    """
     pickle.dump(model, open(model_filepath, 'wb'))
+
+
+def save_scores(scores, scores_filepath):
+    """
+    Saves scores dataframe to csv.
+
+    Params:
+        scores ----------- A pandas dataframe.
+        scores_filepath -- Filepath for the scores csv.
+    """
+    scores.to_csv(scores_filepath)
 
 
 def main():
     # Configure logging
-    logging.basicConfig(filename='train_classifier.log',
+    log_filepath = 'train_classifier.log'
+    logging.basicConfig(filename=log_filepath,
                         level=logging.INFO,
                         format='%(asctime)s -- %(levelname)s: %(message)s',
                         datefmt='%Y-%m-%d %I:%M:%S %p'
@@ -109,8 +164,8 @@ def main():
     parser = ArgumentParser(description=description)
     parser.add_argument('messages_db',
                         help='Messages data in a sqlite database, e.g. ../data/disaster_response.db')
-    parser.add_argument('model_filepath',
-                        help='Output location for final trained model.')
+    parser.add_argument('filepath_prefix',
+                        help='Output location prefix for final trained model and its scoring info.')
     # Get sys args
     args = parser.parse_args()
 
@@ -119,53 +174,39 @@ def main():
 
     # Load the data
     df = load_data(args.messages_db)
+    logging.info('Loading data successful.')
 
     # Split data into training and test
     Y = df.iloc[:, 4:]
     X = df['message']
+    test_size = 0.2
+    random_state = 7
     X_train, X_test, Y_train, Y_test = train_test_split(
-        X, Y, test_size=0.2, random_state=7)
+        X, Y, test_size=test_size, random_state=random_state)
+    logging.info(
+        f'Split data with test size {test_size} and random state {random_state}')
 
     # Build a grid search cross validation model
     model = build_model(tokenizer=tokenize)
+    logging.info('Model built with parameters:')
+    logging.info('-----')
+    logging.info(model.get_params())
+    logging.info('-----')
 
-    # Train the model
+    # Train the model.
+    t_start = time()
     model.fit(X_train, Y_train)
+    t_end = time()
+    logging.info(f'Model trained in {(t_end - t_start)/60} minutes.')
 
     # Test the model
     scores = evaluate_model(model, X_test, Y_test)
     print(scores)
 
     # Save the model
-    save_model(model, args.model_filepath)
-
-    ###
-    # if len(sys.argv) == 3:
-    #     database_filepath, model_filepath = sys.argv[1:]
-    #     print('Loading data...\n    DATABASE: {}'.format(database_filepath))
-    #     X, Y, category_names = load_data(database_filepath)
-    #     X_train, X_test, Y_train, Y_test = train_test_split(
-    #         X, Y, test_size=0.2)
-
-    #     print('Building model...')
-    #     model = build_model()
-
-    #     print('Training model...')
-    #     model.fit(X_train, Y_train)
-
-    #     print('Evaluating model...')
-    #     evaluate_model(model, X_test, Y_test, category_names)
-
-    #     print('Saving model...\n    MODEL: {}'.format(model_filepath))
-    #     save_model(model, model_filepath)
-
-    #     print('Trained model saved!')
-
-    # else:
-    #     print('Please provide the filepath of the disaster messages database '
-    #           'as the first argument and the filepath of the pickle file to '
-    #           'save the model to as the second argument. \n\nExample: python '
-    #           'train_classifier.py ../data/DisasterResponse.db classifier.pkl')
+    save_model(model, args.filepath_prefix + '.pkl')
+    # Save the scores
+    save_scores(scores, args.filepath_prefix + '.csv')
 
 
 if __name__ == '__main__':
