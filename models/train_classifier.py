@@ -40,11 +40,17 @@ def load_data(database_filepath, table_name='messages'):
     return df
 
 
-def tokenize(text, remove_stop_words=False):
+def tokenize(text, remove_stop_words=False, stopwords=stopwords.words('english')):
     """
     Custom tokenizer for messages.
 
-    TODO: remove_stop_words - Boolean to control whether 
+    Params:
+        text --------------- Text to be tokenized.
+        remove_stop_words -- Boolean to remove stop words or not.
+        stopwords ---------- English stopwords by default.
+
+    Returns:
+        tokens ------------- Tokenized version of the input text.
     """
     # case normalization (i.e. all lower case)
     text = text.lower()
@@ -52,18 +58,32 @@ def tokenize(text, remove_stop_words=False):
     text = re.sub(r'[^a-zA-Z0-9]', ' ', text)
     # tokenize the text
     tokens = word_tokenize(text)
-    # TODO
-    # option stop words removal
-    # if remove_stop_words:
-    #     tokens = [
-    #         token for token in tokens if token not in stopwords.words('english')
-    #     ]
+    # Optional stop words removal.
+    # Note: calling stopwords.words('english') here directly causes
+    # pickling functions for some reason (which prevents multicore
+    # processing).
+    if remove_stop_words:
+        tokens = [
+            token for token in tokens if token not in stopwords
+        ]
 
     # wordnet lemmatize
     lemmatizer = WordNetLemmatizer()
-    text = [lemmatizer.lemmatize(token) for token in tokens]
+    tokens = [lemmatizer.lemmatize(token) for token in tokens]
 
-    return text
+    return tokens
+
+
+# Tokenizer function w/ or w/o stop words removal
+# for feeding into pipeline params.
+# Note: if defined inside the build_model function,
+# it becomes unpickable because of local namespace issues.
+def tokenize_keep_stopwords(text):
+    return tokenize(text, remove_stop_words=False)
+
+
+def tokenize_remove_stopwords(text):
+    return tokenize(text, remove_stop_words=True)
 
 
 def build_model(tokenizer=tokenize):
@@ -82,13 +102,18 @@ def build_model(tokenizer=tokenize):
 
     # Pipeline with term frequence-inverse document frequency
     # vectorizer and a multioutput classifier wrapped classifier.
+    # It is possible to use TfidfVectorizer parameters to do most of the tokenizing steps,
+    # without providing a custom tokenizer.
     pipeline = Pipeline([
-        ('vect_tfidf', TfidfVectorizer(tokenizer=tokenize)),
+        ('vect_tfidf', TfidfVectorizer()),
         ('clf', MultiOutputClassifier(RandomForestClassifier()))
     ], verbose=True)
 
+    print(pipeline.get_params().keys())
+
     # Params for grid search.
-    parameters = {'clf__estimator__n_estimators': [1]}
+    parameters = {'vect_tfidf__tokenizer': [tokenize_keep_stopwords, tokenize_remove_stopwords],
+                  'clf__estimator__n_estimators': [1]}
 
     # Wrap the f1_score function with several params, mostly to
     # suppress zero division warnings.
@@ -190,6 +215,7 @@ def main():
     model = build_model(tokenizer=tokenize)
     logging.info('Model built with parameters:')
     logging.info('-----')
+    # Note: use model.get_params().keys() for actual keys to access params
     logging.info(model.get_params())
     logging.info('-----')
 
