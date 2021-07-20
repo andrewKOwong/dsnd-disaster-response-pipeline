@@ -99,7 +99,6 @@ def build_model(tokenizer=tokenize):
     Returns:
         model ------ Scikit learn estimator.
     """
-
     # Pipeline with term frequence-inverse document frequency
     # vectorizer and a multioutput classifier wrapped classifier.
     # It is possible to use TfidfVectorizer parameters to do most of the tokenizing steps,
@@ -109,11 +108,9 @@ def build_model(tokenizer=tokenize):
         ('clf', MultiOutputClassifier(RandomForestClassifier()))
     ], verbose=True)
 
-    print(pipeline.get_params().keys())
-
     # Params for grid search.
     parameters = {'vect_tfidf__tokenizer': [tokenize_keep_stopwords, tokenize_remove_stopwords],
-                  'clf__estimator__n_estimators': [1]}
+                  'clf__estimator__n_estimators': [1, 10, 40, 100]}
 
     # Wrap the f1_score function with several params, mostly to
     # suppress zero division warnings.
@@ -128,7 +125,7 @@ def build_model(tokenizer=tokenize):
     # However, avoid n_jobs = -1, as using all processors may freeze
     # your workstation if working locally.
     model = GridSearchCV(pipeline, param_grid=parameters,
-                         n_jobs=2, scoring=scorer, refit=True, cv=2, verbose=3)
+                         n_jobs=2, scoring=scorer, refit=True, cv=5, verbose=3)
 
     return model
 
