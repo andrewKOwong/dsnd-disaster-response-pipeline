@@ -109,8 +109,9 @@ def build_model(tokenizer=tokenize):
     ], verbose=True)
 
     # Params for grid search.
-    parameters = {'vect_tfidf__tokenizer': [tokenize_keep_stopwords, tokenize_remove_stopwords],
-                  'clf__estimator__n_estimators': [1, 10, 40, 100]}
+    parameters = {'vect_tfidf__tokenizer': [tokenize_remove_stopwords],  # , tokenize_keep_stopwords],
+                  # 'clf__estimator__max_depth': [10, 20, 50, 100],
+                  'clf__estimator__n_estimators': [100]}
 
     # Wrap the f1_score function with several params, mostly to
     # suppress zero division warnings.
