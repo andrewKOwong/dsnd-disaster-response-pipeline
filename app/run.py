@@ -93,10 +93,9 @@ perf_fig = px.bar(df, x='category', y=['precision', 'recall', 'f1-score'],
                   labels={'variable': 'Score Type', 'value': 'score'},
                   color_discrete_sequence=['gold', 'silver', '#c96'],
                   barmode='group',
-                  width=1500,
-                  height=300,
                   )
-perf_fig.update_layout(title_text='Classifier Performance by Category')
+perf_fig.update_layout(title_text='Classifier Performance by Category',
+                       bargap=.35)
 perf_fig.update_yaxes(range=[0, 1.1])
 perf_fig = perf_fig.to_json()
 # Scatterplot of F1 score vs support
@@ -109,7 +108,7 @@ f1_support_fig = px.scatter(df.query('category not in @global_stat'),
                             width=1000, height=1000
                             )
 f1_support_fig.update_traces(textposition='top center')
-f1_support_fig.update_layout(title_text='Classifer F1 Score vs. Support')
+f1_support_fig.update_layout(title_text='Classifier F1 Score vs. Support')
 f1_support_fig.update_yaxes(range=[-0.025, 1.05])
 f1_support_fig = f1_support_fig.to_json()
 
