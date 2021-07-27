@@ -8,6 +8,7 @@ from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 import nltk
 
+import re
 
 from flask import Flask
 from flask import render_template, request, jsonify
@@ -19,21 +20,11 @@ from sqlalchemy import create_engine
 
 app = Flask(__name__)
 
-
-# def tokenize(text):
-#     tokens = word_tokenize(text)
-#     lemmatizer = WordNetLemmatizer()
-
-#     clean_tokens = []
-#     for tok in tokens:
-#         clean_tok = lemmatizer.lemmatize(tok).lower().strip()
-#         clean_tokens.append(clean_tok)
-
-#     return clean_tokens
-
 # TODO remove this and think about where/how to pickle the classifier
 # so it doesn't necessarily call this... or harmonize
 # the tokenizer functions.
+
+
 def tokenize(text, remove_stop_words=False, stopwords=stopwords.words('english')):
     """
     Custom tokenizer for messages.
@@ -84,12 +75,12 @@ df = pd.read_sql_table('messages', engine)
 model = joblib.load("../models/classifier.pkl")
 
 # Load scores for plotting
-df = pd.read_csv("../models/classifier.csv")
-df = df.rename(columns={'Unnamed: 0': 'category'})
+score_df = pd.read_csv("../models/classifier.csv")
+score_df = score_df.rename(columns={'Unnamed: 0': 'category'})
 
 # Create figures in Plotly Express then serialize them to json strings
 # Bar plot of performance by category
-perf_fig = px.bar(df, x='category', y=['precision', 'recall', 'f1-score'],
+perf_fig = px.bar(score_df, x='category', y=['precision', 'recall', 'f1-score'],
                   labels={'variable': 'Score Type', 'value': 'score'},
                   color_discrete_sequence=['gold', 'silver', '#c96'],
                   barmode='group',
@@ -101,7 +92,7 @@ perf_fig = perf_fig.to_json()
 # Scatterplot of F1 score vs support
 # global_stat are global score variables
 global_stat = ['micro avg', 'macro avg', 'weighted avg', 'samples avg']
-f1_support_fig = px.scatter(df.query('category not in @global_stat'),
+f1_support_fig = px.scatter(score_df.query('category not in @global_stat'),
                             x='support',
                             y='f1-score',
                             text='category',
@@ -129,6 +120,7 @@ def go():
 
     # use model to predict classification for query
     classification_labels = model.predict([query])[0]
+    print(df.columns)
     classification_results = dict(zip(df.columns[4:], classification_labels))
 
     # This will render the go.html Please see that file.
