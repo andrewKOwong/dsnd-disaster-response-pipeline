@@ -22,7 +22,6 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 
     <script src="https://cdn.plot.ly/plotly-2.2.0.min.js"></script>
-    <!-- <script src="https://d14fo0winaifog.cloudfront.net/plotly-basic.js"></script> -->
   </head>
 
   <body>
@@ -73,18 +72,14 @@
       <div class="page-header">
         <h1 class="text-center">Overview of Training Dataset</h1>
       </div>
-      {% endblock %} {% for id in ids %}
-      <div id="{{id}}">test{{id}}</div>
-      {% endfor %} {{graphJSON}}
+      <div id="perf_fig"></div>
+      <div id="f1_support_fig"></div>
+      {% endblock %}
     </div>
 
     <script type="text/javascript">
-      <!-- Rendering text into JS objects, safe is no auto escaping. -->
-      const graphs = {{graphJSON | safe}};
-      const ids = {{ids | safe}};
-      for(let i in graphs) {
-          Plotly.newPlot(ids[i], graphs[i].data, graphs[i].layout);
-      }
+      Plotly.newPlot("perf_fig", {{perf_fig | safe}})
+      Plotly.newPlot("f1_support_fig", {{f1_support_fig | safe}})
     </script>
   </body>
 </html>

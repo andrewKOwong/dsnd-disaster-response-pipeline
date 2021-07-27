@@ -1,9 +1,13 @@
 import json
 import plotly
 import pandas as pd
+import plotly.express as px
 
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
+import nltk
+
 
 from flask import Flask
 from flask import render_template, request, jsonify
@@ -16,73 +20,106 @@ from sqlalchemy import create_engine
 app = Flask(__name__)
 
 
-def tokenize(text):
+# def tokenize(text):
+#     tokens = word_tokenize(text)
+#     lemmatizer = WordNetLemmatizer()
+
+#     clean_tokens = []
+#     for tok in tokens:
+#         clean_tok = lemmatizer.lemmatize(tok).lower().strip()
+#         clean_tokens.append(clean_tok)
+
+#     return clean_tokens
+
+# TODO remove this and think about where/how to pickle the classifier
+# so it doesn't necessarily call this... or harmonize
+# the tokenizer functions.
+def tokenize(text, remove_stop_words=False, stopwords=stopwords.words('english')):
+    """
+    Custom tokenizer for messages.
+
+    Params:
+        text --------------- Text to be tokenized.
+        remove_stop_words -- Boolean to remove stop words or not.
+        stopwords ---------- English stopwords by default.
+
+    Returns:
+        tokens ------------- Tokenized version of the input text.
+    """
+    # case normalization (i.e. all lower case)
+    text = text.lower()
+    # punctuation removal
+    text = re.sub(r'[^a-zA-Z0-9]', ' ', text)
+    # tokenize the text
     tokens = word_tokenize(text)
+    # Optional stop words removal.
+    # Note: calling stopwords.words('english') here directly causes
+    # pickling functions for some reason (which prevents multicore
+    # processing).
+    if remove_stop_words:
+        tokens = [
+            token for token in tokens if token not in stopwords
+        ]
+
+    # wordnet lemmatize
     lemmatizer = WordNetLemmatizer()
+    tokens = [lemmatizer.lemmatize(token) for token in tokens]
 
-    clean_tokens = []
-    for tok in tokens:
-        clean_tok = lemmatizer.lemmatize(tok).lower().strip()
-        clean_tokens.append(clean_tok)
-
-    return clean_tokens
+    return tokens
 
 
-# load data
+def tokenize_keep_stopwords(text):
+    return tokenize(text, remove_stop_words=False)
+
+
+def tokenize_remove_stopwords(text):
+    return tokenize(text, remove_stop_words=True)
+
+
+# Load data
 engine = create_engine('sqlite:///../data/disaster_response.db')
 df = pd.read_sql_table('messages', engine)
 
-# load model
+# Load model
 model = joblib.load("../models/classifier.pkl")
 
+# Load scores for plotting
+df = pd.read_csv("../models/classifier.csv")
+df = df.rename(columns={'Unnamed: 0': 'category'})
 
-# index webpage displays cool visuals and receives user input text for model
+# Create figures in Plotly Express then serialize them to json strings
+# Bar plot of performance by category
+perf_fig = px.bar(df, x='category', y=['precision', 'recall', 'f1-score'],
+                  labels={'variable': 'Score Type', 'value': 'score'},
+                  color_discrete_sequence=['gold', 'silver', '#c96'],
+                  barmode='group',
+                  width=1500,
+                  height=300,
+                  )
+perf_fig.update_layout(title_text='Classifier Performance by Category')
+perf_fig.update_yaxes(range=[0, 1.1])
+perf_fig = perf_fig.to_json()
+# Scatterplot of F1 score vs support
+# global_stat are global score variables
+global_stat = ['micro avg', 'macro avg', 'weighted avg', 'samples avg']
+f1_support_fig = px.scatter(df.query('category not in @global_stat'),
+                            x='support',
+                            y='f1-score',
+                            text='category',
+                            width=1000, height=1000
+                            )
+f1_support_fig.update_traces(textposition='top center')
+f1_support_fig.update_layout(title_text='Classifer F1 Score vs. Support')
+f1_support_fig.update_yaxes(range=[-0.025, 1.05])
+f1_support_fig = f1_support_fig.to_json()
+
+
+# Index displays graphs and info about model,
+# and receives input text for classification.
 @app.route('/')
 @app.route('/index')
 def index():
-
-    # extract data needed for visuals
-    # TODO Graph of messages data base.
-    # TODO graph of training parameters.
-    # TODO: Below is an example - modify to extract data for your own visuals
-    genre_counts = df.groupby('genre').count()['message']
-    genre_names = list(genre_counts.index)
-
-    # create visuals
-    # TODO: Below is an example - modify to create your own visuals
-    graphs = [
-        {
-            'data': [
-                Bar(
-                    x=genre_names,
-                    y=genre_counts
-                )
-            ],
-
-            'layout': {
-                'title': 'Distribution of Message Genres',
-                'yaxis': {
-                    'title': "Count"
-                },
-                'xaxis': {
-                    'title': "Genre"
-                },
-                'autosize': 'false',
-                'width': 1000,
-                'height': 2000
-            }
-        }
-    ]
-
-    # encode plotly graphs in JSON
-    ids = ["graph-{}".format(i) for i, _ in enumerate(graphs)]
-    graphJSON = json.dumps(graphs, cls=plotly.utils.PlotlyJSONEncoder)
-
-    print(graphJSON)
-    print(type(graphJSON))
-
-    # render web page with plotly graphs
-    return render_template('master.html', ids=ids, graphJSON=graphJSON)
+    return render_template('master.html', perf_fig=perf_fig, f1_support_fig=f1_support_fig)
 
 
 # web page that handles user query and displays model results
