@@ -78,7 +78,7 @@ model = joblib.load("../models/classifier.pkl")
 score_df = pd.read_csv("../models/classifier.csv")
 score_df = score_df.rename(columns={'Unnamed: 0': 'category'})
 
-# Create figures in Plotly Express then serialize them to json strings
+# Create figures in Plotly Express then serialize them to json strings.
 # Bar plot of performance by category
 perf_fig = px.bar(score_df, x='category', y=['precision', 'recall', 'f1-score'],
                   labels={'variable': 'Score Type', 'value': 'score'},
@@ -95,21 +95,46 @@ global_stat = ['micro avg', 'macro avg', 'weighted avg', 'samples avg']
 f1_support_fig = px.scatter(score_df.query('category not in @global_stat'),
                             x='support',
                             y='f1-score',
-                            text='category',
-                            width=1000, height=1000
+                            text='category'
                             )
 f1_support_fig.update_traces(textposition='top center')
 f1_support_fig.update_layout(title_text='Classifier F1 Score vs. Support')
 f1_support_fig.update_yaxes(range=[-0.025, 1.05])
 f1_support_fig = f1_support_fig.to_json()
-
+# Plot of the categories of the training data.
+sums = df.iloc[:, 4:].sum()
+sums_df = pd.concat([sums, df.shape[0] - sums], axis=1)
+sums_df.columns = ['sum', 'remainder']
+sums_fig = px.bar(sums_df, y=['sum', 'remainder'],
+                  color_discrete_sequence=['blue', 'lightgray'])
+sums_fig.update_layout(showlegend=False)
+sums_fig = sums_fig.to_json()
+# Plot of the proportion of messages in each category
+# that are translated from their original language
+proportion_translated = []
+for cat in sums_df.index:
+    # Proportion of message in a category that needed
+    # translated from the original
+    prop = 1 - df[df[cat] == 1].original.isna().mean()
+    proportion_translated.append([cat, prop])
+proportion_translated = pd.DataFrame(proportion_translated, columns=[
+                                     'Category', 'Proportion Translated'])
+translated_fig = px.bar(proportion_translated,
+                        x='Category', y='Proportion Translated',)
+translated_fig = translated_fig.to_json()
 
 # Index displays graphs and info about model,
 # and receives input text for classification.
+
+
 @app.route('/')
 @app.route('/index')
 def index():
-    return render_template('master.html', perf_fig=perf_fig, f1_support_fig=f1_support_fig)
+    return render_template('master.html',
+                           perf_fig=perf_fig,
+                           f1_support_fig=f1_support_fig,
+                           sums_fig=sums_fig,
+                           translated_fig=translated_fig)
 
 
 # web page that handles user query and displays model results

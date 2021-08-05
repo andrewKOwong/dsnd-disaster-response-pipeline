@@ -75,12 +75,29 @@
     <div class="container">
       {% block content %}
       <div class="page-header">
+        <h1 class="text-center">Training Data Characteristics</h1>
+      </div>
+
+      <p>
+        The entire dataset consists of 26028 short messages. Thes messages are
+        annotated as "related" to indicate that they are relevant to disaster
+        response, with further annotations to categorize the type of message
+        into 35 subcategories. About 39% of these messages are translated from
+        an original non English language into English (although some of these
+        messages appear to be originally in English regardless).
+      </p>
+      <p>
+        The two plots here display the number messages in the dataset in each
+        category, and the fraction of messages in each category that are
+        translated from an original non English message.
+      </p>
+      <div id="sums_fig"></div>
+      <div id="translated_fig"></div>
+
+      <div class="page-header">
         <h1 class="text-center">Model Performance</h1>
       </div>
-      <p>
-        A random forest was trained on ~26K short messages with annotations for
-        36 categories.
-      </p>
+      <p>A random forest model was trained on 80% of the training dataset.</p>
       <p>
         Below, the first plot displays the performance amongst each category.
         The second plot displays the F1 score of each category versus the number
@@ -95,7 +112,11 @@
       Plotly.newPlot("perf_fig", {{perf_fig | safe}})
       Plotly.relayout("perf_fig", {'width':1000, 'height':400})
       Plotly.newPlot("f1_support_fig", {{f1_support_fig | safe}})
-      Plotly.reayout("f1_support_fig", {'width':1000, 'height':1000})
+      Plotly.relayout("f1_support_fig", {'width':1000, 'height':1000})
+      Plotly.newPlot("sums_fig", {{sums_fig | safe}})
+      Plotly.relayout("sums_fig", {'width':1000, 'height':400})
+      Plotly.newPlot("translated_fig", {{translated_fig | safe}})
+      Plotly.relayout("translated_fig", {'width':1000, 'height':400})
     </script>
   </body>
 </html>
