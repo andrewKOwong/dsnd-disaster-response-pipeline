@@ -1,5 +1,6 @@
 # Disaster Response Pipeline Project
 
+<<<<<<< HEAD
 This project is part of the Udacity Data Scientist Nanodegree.
 
 This goal of this project is to build an ETL (extract, transform, load) pipeline and a machine learning pipeline.
@@ -17,6 +18,13 @@ TODO Possible improvements.
 The dataset is very unbalanced, leading to very poor scores among a number of the subcategories. As well, "related" messages probably make up too much of the data set, and the final model appears to predict false positives at a high rate. It may be worth dropping some of the smaller subcategories entirely. However, if it may be worth in high priority situations (such as imminent death) to use recall as a preferred scoring metric, as false negatives would be a worse outcome than false positives in such a scenario.
 
 I did not experiment with different types of models. I suspect I could get the scores higher with more experimentation, but as the explicit goal of this project is to build a pipeline as opposed to optimizing the model per se, I elected not to do so for now.
+=======
+This goal of this project is to build an ETL (extract, transform, load) pipeline and a machine learning pipeline.
+
+The dataset is composed of 26028 short messages that may or may not be relevant to disaster responders. Relevant messages are categorized as "related", and "related" messages are further subcategorized into 35 subcategories. 39% of all messages are translated into English from a non-English language (although a small number of these are in English regardless).
+
+This project is part of the Udacity Data Scientist Nanodegree.
+>>>>>>> fe7d3f922d89bb92f21e4926ee2b59999eda98b8
 
 ### Instructions:
 
