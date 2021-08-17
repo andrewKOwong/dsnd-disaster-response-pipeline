@@ -22,6 +22,13 @@ I did not experiment with different types of models. I suspect I could get the s
 
 ## Instructions:
 
+### Description of files:
+
+- `app` is the folder for the web app, with `run.py` used to start the Flask web server
+- `data` holds the training data (messages and the categories of the messages), `process_data.py` for running an ETL pipeline on the data.
+- `models` contains `train_classifier.py` for running an ML training pipeline.
+- `README.md` is this read me file.
+
 ### Libraries required:
 
 `numpy`  
