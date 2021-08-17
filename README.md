@@ -4,7 +4,9 @@
 
 This project is part of the Udacity Data Scientist Nanodegree.
 
-This goal of this project is to build an ETL (extract, transform, load) pipeline and a machine learning pipeline.
+In a disaster scenario (e.g. a hurricane), people in need of assistance may be able to send out short messages (e.g. tweets) to communicate their situation. These messages are potentially a useful signal for disaster relief agencies to prioritize their efforts and resources appropriate, based on what the situation the message describes and the severity of the situation. However, the volume of messages could be very large, and hence an automated method to categorize these messages before human inspection would likely be useful for relief agencies.
+
+This goal of this project is to build an ETL (extract, transform, load) pipeline and a ML (machine learning) pipeline that will be able to process a dataset of short messages (e.g. tweets) and train a classifier for these messages. This classifier would be deployed as a webapp, whereupon a user could enter a message and see if the message falls under some content categories (e.g. food, missing people, medical help).
 
 The dataset is composed of 26028 short messages that may or may not be relevant to disaster responders. Relevant messages are categorized as "related", and "related" messages are further subcategorized into 35 subcategories. 39% of all messages are translated into English from a non-English language (although a small number of these are in English regardless). Two plots describing the dataset are available in the web app (see below).
 
@@ -66,6 +68,6 @@ I did not experiment with different types of models. I suspect I could get the s
 
      The pipeline is set train a random forest with stop word removal and 100 estimators. You may alter the grid search parameters inside the `build_model()` method.
 
-2. To start the webapp, in the root directory run:  
-   `python app/run.py`  
+2. To start the webapp, in the `app` directory run:  
+   `python run.py`  
    The webapp will be available at: http://0.0.0.0:3001/
