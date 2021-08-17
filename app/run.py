@@ -13,16 +13,16 @@ import re
 from flask import Flask
 from flask import render_template, request, jsonify
 from plotly.graph_objs import Bar
-# from sklearn.externals import joblib
 import joblib
 from sqlalchemy import create_engine
 
 
 app = Flask(__name__)
 
-# TODO remove this and think about where/how to pickle the classifier
-# so it doesn't necessarily call this... or harmonize
-# the tokenizer functions.
+# These three tokenizer functions are the same as in the ML pipeline.
+# The names must be the same as the unpickled classifier searches
+# the namespace for the tokenizer function of the same name
+# that was used in the original sklearn pipeline.
 
 
 def tokenize(text, remove_stop_words=False, stopwords=stopwords.words('english')):
