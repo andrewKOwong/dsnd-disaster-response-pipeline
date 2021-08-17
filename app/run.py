@@ -60,10 +60,16 @@ def tokenize(text, remove_stop_words=False, stopwords=stopwords.words('english')
 
 
 def tokenize_keep_stopwords(text):
+    """
+    Convenience function to return the tokenize method without stop words removal.
+    """
     return tokenize(text, remove_stop_words=False)
 
 
 def tokenize_remove_stopwords(text):
+    """
+    Convenience function to return the tokenize method with stop words removal.
+    """
     return tokenize(text, remove_stop_words=True)
 
 
