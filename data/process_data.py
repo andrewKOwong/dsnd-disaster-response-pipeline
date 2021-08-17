@@ -86,7 +86,7 @@ def save_data(df, database_filename='messages.db', table_name='messages'):
     table_name        - name for the table.
     """
     engine = create_engine('sqlite:///' + database_filename)
-    df.to_sql(table_name, engine, index=False)
+    df.to_sql(table_name, engine, index=False, if_exists='replace')
     logging.info(f'Saved to {database_filename}. Table: {table_name}.')
 
 
