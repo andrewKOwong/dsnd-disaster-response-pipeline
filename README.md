@@ -62,7 +62,7 @@ I did not experiment with different types of models. I suspect I could get the s
      A log file `train_classifier.log` will also be generated.
 
      For more complete logging, you may also capture `stderr` and `stdoutput` by running in the shell:  
-     `python train_classifier.py ../data/disaster_response.db classifier 2>&1 | tee stdout_stderr.log`
+     `python models/train_classifier.py data/disaster_response.db classifier 2>&1 | tee stdout_stderr.log`
 
      This can be helpful for inspecting classifier training iterations.
 
